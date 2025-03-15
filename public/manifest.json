@@ -1,6 +1,6 @@
 {
-  "name": "YouTube Video Fetcher",
-  "short_name": "YT Fetcher",
+  "name": "YouTube subscribed Videos",
+  "short_name": "MyTube",
   "description": "Your personal YouTube video dashboard",
   "start_url": "/dashboard",
   "display": "standalone",
