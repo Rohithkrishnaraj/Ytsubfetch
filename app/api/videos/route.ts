@@ -1,5 +1,6 @@
 // app/api/videos/route.ts
 import { NextResponse } from "next/server";
+import { headers } from 'next/headers';
 
 type YouTubeVideo = {
   id?: { videoId?: string };
@@ -26,15 +27,50 @@ type SanitizedVideo = {
   };
 };
 
+export const dynamic = 'force-dynamic';  // Prevent caching
+export const revalidate = 0;  // Prevent caching
+
 export async function GET(request: Request) {
+  // Add cache prevention headers
+  const headersList = headers();
+  const response = new NextResponse();
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+
   const { searchParams } = new URL(request.url);
   const accessToken = searchParams.get("access_token");
 
   if (!accessToken) {
-    return NextResponse.json({ error: "Access token required" }, { status: 401 });
+    return NextResponse.json({ error: "Access token required" }, { 
+      status: 401,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
   }
 
   try {
+    // Validate token first
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!userInfoResponse.ok) {
+      return NextResponse.json({ error: "Invalid or expired access token" }, { 
+        status: 401,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    }
+
     console.log('Fetching subscriptions with access token:', accessToken.substring(0, 10) + '...');
 
     // Get user's subscriptions
@@ -102,12 +138,25 @@ export async function GET(request: Request) {
     return NextResponse.json({
       items: sortedVideos,
       subscriptionCount: channelIds.length,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
   } catch (error) {
     console.error('Error fetching subscribed videos:', error);
     return NextResponse.json(
       { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      }
     );
   }
 }
