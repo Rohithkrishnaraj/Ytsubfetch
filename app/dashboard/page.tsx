@@ -85,6 +85,7 @@ export default function DashboardPage() {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<ErrorDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [channelTitle, setChannelTitle] = useState<string>('Subscribed Channels');
@@ -209,6 +210,11 @@ export default function DashboardPage() {
         }
 
         setAccessToken(session.provider_token);
+        setUserId(session.user.id);
+        setVideos([]);
+        setSelectedVideo(null);
+        setError(null);
+        setCurrentPage(1);
       } catch (err) {
         console.error("Session error:", err);
         if (mounted) {
@@ -229,6 +235,11 @@ export default function DashboardPage() {
         router.replace("/login");
       } else {
         setAccessToken(session.provider_token);
+        setUserId(session.user.id);
+        setVideos([]);
+        setSelectedVideo(null);
+        setError(null);
+        setCurrentPage(1);
       }
     });
 
@@ -288,7 +299,7 @@ export default function DashboardPage() {
 
   // Auto-refresh videos
   useEffect(() => {
-    if (!accessToken) return;
+    if (!accessToken || !userId) return;
 
     let mounted = true;
 
@@ -304,7 +315,7 @@ export default function DashboardPage() {
       mounted = false;
       clearInterval(interval);
     };
-  }, [accessToken, fetchVideos, preferences.refreshInterval]);
+  }, [accessToken, userId, fetchVideos, preferences.refreshInterval]);
 
   const savePreferences = (newPrefs: Partial<UserPreferences>) => {
     const updatedPrefs = { ...preferences, ...newPrefs };
